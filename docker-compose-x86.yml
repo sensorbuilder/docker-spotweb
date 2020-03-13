@@ -9,9 +9,8 @@ services:
     depends_on:
     - "mysql"
   mysql:
-    image: "mysql:5.7"
+    image: "mysql:8"
+    volumes:
+      - ./mysql:/docker-entrypoint-initdb.d
     environment:
-      MYSQL_ROOT_PASSWORD: 123
-      MYSQL_USER: spotweb
-      MYSQL_PASSWORD: spotweb
-      MYSQL_DATABASE: spotweb
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
