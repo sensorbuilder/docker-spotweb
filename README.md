@@ -1,14 +1,21 @@
-# Dockerfile to set up Spotweb on ARM and X86 based systems
+# Spotweb in Docker on ARM and X86 based systems
 
 [![Build Status](https://travis-ci.org/edv/docker-spotweb.svg?branch=master)](https://travis-ci.org/edv/docker-spotweb)
 
-The main goal of this Dockerfile is to easily set up Spotweb using Docker on the Raspberry Pi 2/3 (or any compatible ARM chipset) and regular X86 chipsets.
+The main goal of this project is to easily set up Spotweb using Docker on the Raspberry Pi 2+ (or any compatible ARM chipset) and regular X86 chipsets.
+
+Spotweb requires a database server (e.g. MySQL or PostgreSQL). This project contains an example docker-compose setup which uses MySQL. The other option is to manually specify a database server using the ENV variables below (be aware, I only tested this setup using MySQL 5.x and 8.x)
+
+## Quick setup using docker-compose
+
+* `docker-compose -f docker-compose-arm.yml up` or `docker-compose -f docker-compose-x86.yml up` depending on cpu architecture
+* Visit `http://localhost:8080`
+* Login with username `admin` and password `spotweb`
+* Configure usenet server and wait for cronjob to update (runs once every 15 minutes, first update can take a very long time!)
 
 ## Quick setup using dockerfile
 
-*Spotweb always requires a database server (MySQL), the easiest solution is to use the docker-compose setup. The other option is to manually specify an external server using the ENV variables below.*
-
-`docker run -p 8080:80 --name spotweb -d -v /etc/localtime:/etc/localtime:ro erikdevries/spotweb`
+`docker run -p 8080:80 --name spotweb -d erikdevries/spotweb`
 
 Provide one or more of the following environment variables to configure the database server (all optional, default values are given below):
 * DB_ENGINE (default = `pdo_mysql`)
@@ -18,16 +25,11 @@ Provide one or more of the following environment variables to configure the data
 * DB_USER (default = `spotweb`)
 * DB_PASS (default = `spotweb`)
 
-E.g. to configure server with host `some.external.mysql-server.com` and port `6612` do the following:
+E.g. to configure database server with host `some.external.mysql-server.com` and port `6612` do the following:
 
-`docker run -p 8080:80 --name spotweb -d -v /etc/localtime:/etc/localtime:ro -e "DB_HOST=some.external.mysql-server.com" -e "DB_PORT=6612" erikdevries/spotweb`
+`docker run -p 8080:80 --name spotweb -d -e "DB_HOST=some.external.mysql-server.com" -e "DB_PORT=6612" erikdevries/spotweb`
 
-## Quick setup using docker compose
-
-* `docker-compose -f docker-compose-arm.yml up` or `docker-compose -f docker-compose-x86.yml up` depending on cpu architecture
-* Visit `http://localhost:8080`
-* Login with username `admin` and password `spotweb`
-* Configure usenet server and wait for cronjob to update (runs once every 15 minutes)
+Now follow the same steps as described when using docker-compose.
 
 ## Information
 
@@ -35,12 +37,16 @@ E.g. to configure server with host `some.external.mysql-server.com` and port `66
 * If you want to use the Spotweb API, create a new user and use the API key associated with that user
 * If you would like to save nzb files to disk for (e.g.) SABnzbd to be picked up, configure docker-compose.yml to mount e.g. /nzb to some directory where nzb's need to be saved, and configure Spotweb to save NZB's to this directory on disk
 
-## Docker setup
+## Project background
 
 I decided on the following setup for this Docker image:
 * Image contains NGINX, PHP 7 and Crond
-* For the database a MySQL 5.x image is used (MySQL 8 can also be used)
+* For the database a MySQL 5.x image is used (see below for information on MySQL 8)
 * To prevent having to configure Spotweb manually `upgrade-db.php` is run to upgrade the database and reset the password for the admin user (so currently the `admin` always has password `spotweb`, you can change this after the first login)
 * Crond is used to run the `retrieve.php` script which updates Spotweb with the latest headers from a configured usenet server, the crontab is run every 15 minutes
 * The only required manual configuration is setting up a valid usenet server
 * Depending on what you like, you can mount the /nzb volume and let Spotweb save nzb's to that directory (e.g. mount /nzb to a folder watched by sabnzbd)
+
+## MySQL 8 information
+
+* Spotweb supports MySQL 8, but you need to make sure you configure the spotweb database user to use `mysql_native_password` authentication. Have a look at the include SQL file `mysql/fix_mysql_auth.sql` on how to create this user.
